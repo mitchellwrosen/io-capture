@@ -1,0 +1,34 @@
+-- This file has been generated from package.yaml by hpack version 0.9.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           io-capture
+version:        0.1.0.0
+synopsis:       Capture IO actions' stdout and stderr
+description:    Capture IO actions' stdout and stderr
+homepage:       https://github.com/mitchellwrosen/io-capture#readme
+bug-reports:    https://github.com/mitchellwrosen/io-capture/issues
+author:         Mitchell Rosen
+maintainer:     mitchellwrosen@gmail.com
+copyright:      2016 Mitchell Rosen
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/mitchellwrosen/io-capture
+
+library
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base
+    , bytestring
+    , streaming-bytestring
+    , unix
+  exposed-modules:
+      System.IO.Capture
+  default-language: Haskell2010

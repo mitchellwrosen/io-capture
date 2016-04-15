@@ -1,0 +1,20 @@
+name: io-capture
+version: 0.1.0.0
+synopsis: Capture IO actions' stdout and stderr
+description: Capture IO actions' stdout and stderr
+github: mitchellwrosen/io-capture
+license: BSD3
+author: Mitchell Rosen
+maintainer: mitchellwrosen@gmail.com
+copyright: 2016 Mitchell Rosen
+
+ghc-options: -Wall
+
+dependencies:
+  - base
+  - bytestring
+  - streaming-bytestring
+  - unix
+
+library:
+  source-dirs: src
