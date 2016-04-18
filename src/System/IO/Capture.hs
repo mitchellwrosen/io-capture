@@ -8,9 +8,10 @@ module System.IO.Capture
 
 import Control.Exception
 import Control.Monad
+import System.IO            (hClose, hPutStr)
 import System.Posix.IO
 import System.Posix.Process
-import System.Posix.Types (ByteCount, Fd)
+import System.Posix.Types   (ProcessID)
 
 import qualified Data.ByteString.Lazy      as LBS
 import qualified Data.ByteString.Streaming as S
@@ -36,8 +37,8 @@ import Data.ByteString.Streaming (stdout)
 -- @
 capture :: IO a -> IO (LBS.ByteString, LBS.ByteString, LBS.ByteString, Maybe ProcessStatus)
 capture act = do
-  (out, err, exc, waitpid) <- captureStream act
-  status <- waitpid
+  (out, err, exc, pid) <- captureStream act
+  status <- getProcessStatus True True pid
   (,,,)
     <$> S.toLazy_ out
     <*> S.toLazy_ err
@@ -45,21 +46,21 @@ capture act = do
     <*> pure status
 
 -- | Stream an IO action's @stdout@, @stderr@, and any thrown exception. Also
--- returns an action that @wait@s on the spawn child. This must be called
--- eventually, otherwise the child will remain a zombie.
+-- returns the spawned process's pid to @wait@ on (otherwise the process will
+-- become a zombie after terminating), kill, etc.
 --
 -- @
 -- import qualified Data.ByteString.Streaming as S
 --
 -- > let action = 'putStrLn' \"foo\" >> 'Control.Concurrent.threadDelay' 1000000
--- > (out, _, _, waitpid) <- 'captureStream' ('Control.Monad.replicateM_' 5 action)
+-- > (out, _, _, pid) <- 'captureStream' ('Control.Monad.replicateM_' 5 action)
 -- > S.'stdout' out
 -- foo
 -- foo
 -- foo
 -- foo
 -- foo
--- > waitpid
+-- > 'getProcessStatus' True True pid
 -- Just ('Exited' 'System.Exit.ExitSuccess')
 -- @
 captureStream
@@ -67,7 +68,7 @@ captureStream
   -> IO ( S.ByteString IO ()
         , S.ByteString IO ()
         , S.ByteString IO ()
-        , IO (Maybe ProcessStatus)
+        , ProcessID
         )
 captureStream act = do
   (out_r, out_w) <- createPipe
@@ -82,11 +83,13 @@ captureStream act = do
     _ <- dupTo out_w stdOutput
     _ <- dupTo err_w stdError
 
-    void act `catch` \(e :: SomeException) -> fdWriteAll exc_w (show e)
+    exc_wh <- fdToHandle exc_w
+
+    void act `catch` \(e :: SomeException) -> hPutStr exc_wh (show e)
 
     closeFd out_w
     closeFd err_w
-    closeFd exc_w
+    hClose exc_wh
 
   closeFd out_w
   closeFd err_w
@@ -99,14 +102,5 @@ captureStream act = do
   pure ( S.hGetContents out_rh
        , S.hGetContents err_rh
        , S.hGetContents exc_rh
-       , getProcessStatus True True pid
+       , pid
        )
-
-fdWriteAll :: Fd -> String -> IO ()
-fdWriteAll fd str0 = go str0 (fromIntegral (length str0))
- where
-  go :: String -> ByteCount -> IO ()
-  go str n = do
-    n' <- fdWrite fd str
-    when (n' < n) $
-      go (drop (fromIntegral n') str) (n - n')

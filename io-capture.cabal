@@ -32,3 +32,17 @@ library
   exposed-modules:
       System.IO.Capture
   default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: tests/Spec.hs
+  ghc-options: -Wall
+  build-depends:
+      base
+    , bytestring
+    , streaming-bytestring
+    , unix
+    , hspec
+    , hspec-core
+    , io-capture
+  default-language: Haskell2010

@@ -18,3 +18,11 @@ dependencies:
 
 library:
   source-dirs: src
+
+tests:
+  spec:
+    main: tests/Spec.hs
+    dependencies:
+      - hspec
+      - hspec-core
+      - io-capture
